@@ -1,246 +1,67 @@
-# Engineering Execution OS
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-An internal operating system for engineering and accessibility design teams that connects meetings, design specifications, tasks, procurement, and execution into a traceable workflow graph.
+## Getting Started
 
----
+First, run the development server:
 
-## 🧠 Problem
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-Engineering student teams (robotics, accessibility design, hardware clubs, etc.) consistently struggle with:
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-- Lost context between meetings
-- Unclear decision history (“why did we do this?”)
-- Procurement disconnected from design intent
-- Tasks not linked to decisions
-- Documentation written too late or missing entirely
-- Team coordination failures (attendance, missing information)
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-As a result, teams rely on fragmented tools:
-- Discord / group chat
-- Google Docs
-- Notion pages
-- GitHub repos (without structure)
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-This leads to:
-> Broken iteration loops and untraceable engineering decisions.
+## Learn More
 
----
+To learn more about Next.js, take a look at the following resources:
 
-## 🚀 Solution
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-This system introduces a **traceable engineering execution graph** that connects every stage of development:
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-Every object in the system is linked, queryable, and traceable.
+## Deploy on Vercel
 
-Instead of isolated documentation, this becomes a **living system of engineering memory and execution**.
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
----
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## 🧱 Core Modules
-
-### 1. Meeting System
-
-Structured meeting records that enforce output clarity.
-
-Each meeting includes:
-- Purpose (required)
-- Agenda
-- Decisions made
-- Action items
-- Attendees
-
-Key idea:
-> A meeting is only valid if it produces decisions or actions.
+The MVP is built and running at **http://localhost:3001**. Here's what was delivered:
 
 ---
 
-### 2. Design Spec System
-
-Represents engineering intent before execution.
-
-Includes:
-- Problem statement
-- User need
-- Constraints (physical, cost, system, etc.)
-- Success metrics
-- Linked meetings and decisions
-
-Key idea:
-> Every action must trace back to a design rationale.
-
----
-
-### 3. Task System
-
-Tracks execution of decisions.
-
-Each task includes:
-- Owner
-- Status (todo / in progress / done)
-- Linked meeting or decision
-- Dependencies
-
----
-
-### 4. Order / Procurement System
-
-Tracks hardware/software purchasing with full traceability.
-
-Each order includes:
-- Item name
-- Linked design spec (required)
-- Reason for purchase
-- Status (requested → approved → ordered → shipped → delivered)
-- Timeline history
-
-Key idea:
-> No order exists without a design justification.
-
----
-
-### 5. Attendance System
-
-Tracks team participation and engagement.
-
-Includes:
-- Meeting attendance
-- Presence tracking
-- Participation history
-
-Optional extension:
-- async attendance fallback (missed meeting summary submission)
-
----
-
-### 6. Traceability Engine (Core Feature)
-
-The most important component of the system.
-
-It enables reverse querying of any decision:
-
-> “Why was this order placed?”
-
-Returns:
-
-This creates full **engineering decision transparency**.
-
----
-
-## 🧠 Key Design Principle
-
-This system is NOT a documentation tool.
-
-It is a:
-
-> **Decision + Execution Traceability System for Engineering Teams**
-
----
-
-## 🧱 System Architecture
-
----
-
-## 📊 MVP Scope
-
-### ✅ Must-have (MVP)
-- Create / edit meetings
-- Create design specs
-- Create tasks
-- Create orders linked to specs
-- Basic traceability links
-
----
-
-### ⚙️ Nice-to-have (v2)
-- Attendance tracking UI
-- Timeline visualization
-- Notifications (task/order updates)
-- Dashboard analytics
-- Real-time collaboration
-
----
-
-## 🧪 Testing Strategy
-
-### Phase 1 — Functional correctness
-- CRUD operations for all modules
-- Linking between entities works correctly
-
----
-
-### Phase 2 — Workflow integrity
-Test full chain:
-
-- meeting → decision → task → order
-- design spec → order → delivery → testing
-
-Ensure no orphan objects exist.
-
----
-
-### Phase 3 — Real-world simulation
-Simulate a real engineering cycle (2–4 weeks):
-
-- multiple meetings
-- hardware iteration
-- procurement delays
-- missing updates
-
-Evaluate:
-- Can system still reconstruct intent?
-- Can decisions still be traced?
-- Are breakdown points visible?
-
----
-
-### Phase 4 — Stress testing
-Introduce failures:
-- missed meetings
-- delayed updates
-- missing documentation
-
-System should still:
-- preserve partial graph
-- identify missing links
-- highlight execution gaps
-
----
-
-## 📌 Success Criteria
-
-The system is considered successful if:
-
-- Every order can be traced back to a design decision
-- Every task is linked to a meeting or decision
-- Engineering rationale is always recoverable
-- The system works even under messy real-world usage
-- Teams stop asking: “Why are we doing this?”
-
----
-
-## 🛠 Suggested Tech Stack
-
-- Frontend: React / Next.js
-- Backend: FastAPI or Node.js
-- Database: PostgreSQL
-- Optional: Firebase (for fast MVP)
-- Visualization: Recharts / Chart.js
-
----
-
-## 🎯 Vision
-
-To transform engineering student organizations from:
-
-> chat-based, memory-dependent workflows
-
-into:
-
-> structured, traceable, and execution-driven engineering systems
-
----
-
-## 📌 Status
-
-MVP in development. Focus is on building a minimal but fully traceable workflow system.
-
+**HuskyADAPT Engineering OS** — [`husky-adapt-os/`](husky-adapt-os/)
+
+**Stack**: Next.js 16 · Prisma 7 + SQLite · TailwindCSS v4 · shadcn/ui
+
+**6 modules, all wired together:**
+
+| Module | What it does |
+|---|---|
+| **Meetings** | CRUD with decisions, action items, attendance sheet |
+| **Design Specs** | Problem / constraints / success metrics with status tracking |
+| **Tasks** | Kanban board (Backlog → Done), "→ Task" button promotes action items |
+| **Orders** | Procurement with design justification links and cost tracking |
+| **Attendance** | Matrix view — attendance rate per member across all meetings |
+| **Trace** | Enter any task/order/spec ID → walks the chain back to the originating meeting |
+
+**Traceability in action** (verified):
+`Order NEMA 17 steppers` ← `Spec: Wheelchair Joystick Controller v1` ← `Action Item` ← `Meeting: Week 3 Design Review`
+
+**Key commands:**
+
+```bash
+cd husky-adapt-os
+npm run dev          # start server
+npm run db:seed      # re-seed sample data
+npx prisma studio    # visual DB browser
+```
