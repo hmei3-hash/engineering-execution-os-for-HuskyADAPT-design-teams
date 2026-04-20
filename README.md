@@ -58,6 +58,7 @@ The MVP is built and running at **http://localhost:3001**. Here's what was deliv
 `Order NEMA 17 steppers` ← `Spec: Wheelchair Joystick Controller v1` ← `Action Item` ← `Meeting: Week 3 Design Review`
 
 **Key commands:**
+
 ```bash
 cd husky-adapt-os
 npm run dev          # start server
