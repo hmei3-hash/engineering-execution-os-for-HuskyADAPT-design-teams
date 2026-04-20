@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Member {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attendance       Attendance[]
+  tasksOwned       Task[]       @relation("TaskOwner")
+  actionItemsOwned ActionItem[] @relation("ActionItemOwner")
+}
+
+model Meeting {
+  id        String        @id @default(cuid())
+  title     String
+  date      DateTime
+  location  String?
+  agenda    String?
+  notes     String?
+  status    MeetingStatus @default(SCHEDULED)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  attendance  Attendance[]
+  decisions   Decision[]
+  actionItems ActionItem[]
+  tasks       Task[]       @relation("TaskSourceMeeting")
+  orders      Order[]      @relation("OrderSourceMeeting")
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Decision {
+  id        String   @id @default(cuid())
+  meetingId String
+  summary   String
+  rationale String?
+  madeBy    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  meeting Meeting    @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  specs   DesignSpec[] @relation("DecisionToSpec")
+  tasks   Task[]       @relation("DecisionToTask")
+  orders  Order[]      @relation("DecisionToOrder")
+}
+
+model ActionItem {
+  id          String           @id @default(cuid())
+  meetingId   String
+  description String
+  ownerId     String?
+  dueDate     DateTime?
+  status      ActionItemStatus @default(OPEN)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  meeting Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  owner   Member?  @relation("ActionItemOwner", fields: [ownerId], references: [id])
+  task    Task?    @relation("ActionItemToTask")
+}
+
+enum ActionItemStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+model DesignSpec {
+  id               String     @id @default(cuid())
+  title            String
+  version          String     @default("1.0")
+  status           SpecStatus @default(DRAFT)
+  problemStatement String
+  constraints      String
+  successMetrics   String
+  proposedSolution String?
+  risks            String?
+  notes            String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  sourceDecisions Decision[] @relation("DecisionToSpec")
+  tasks           Task[]     @relation("SpecToTask")
+  orders          Order[]    @relation("SpecToOrder")
+}
+
+enum SpecStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  SUPERSEDED
+}
+
+model Task {
+  id               String     @id @default(cuid())
+  title            String
+  description      String?
+  status           TaskStatus @default(BACKLOG)
+  priority         Priority   @default(MEDIUM)
+  dueDate          DateTime?
+  ownerId          String?
+  sourceMeetingId  String?
+  sourceDecisionId String?
+  sourceSpecId     String?
+  sourceActionItemId String?  @unique
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  owner          Member?     @relation("TaskOwner", fields: [ownerId], references: [id])
+  sourceMeeting  Meeting?    @relation("TaskSourceMeeting", fields: [sourceMeetingId], references: [id])
+  sourceDecision Decision?   @relation("DecisionToTask", fields: [sourceDecisionId], references: [id])
+  sourceSpec     DesignSpec? @relation("SpecToTask", fields: [sourceSpecId], references: [id])
+  sourceActionItem ActionItem? @relation("ActionItemToTask", fields: [sourceActionItemId], references: [id])
+  orders         Order[]     @relation("TaskToOrder")
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Order {
+  id               String      @id @default(cuid())
+  itemName         String
+  description      String?
+  vendor           String?
+  partNumber       String?
+  quantity         Int         @default(1)
+  unitCostCents    Int?
+  totalCostCents   Int?
+  currency         String      @default("USD")
+  url              String?
+  status           OrderStatus @default(REQUESTED)
+  requestedBy      String?
+  orderedAt        DateTime?
+  receivedAt       DateTime?
+  notes            String?
+  sourceMeetingId  String?
+  sourceDecisionId String?
+  sourceSpecId     String?
+  sourceTaskId     String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  sourceMeeting  Meeting?    @relation("OrderSourceMeeting", fields: [sourceMeetingId], references: [id])
+  sourceDecision Decision?   @relation("DecisionToOrder", fields: [sourceDecisionId], references: [id])
+  sourceSpec     DesignSpec? @relation("SpecToOrder", fields: [sourceSpecId], references: [id])
+  sourceTask     Task?       @relation("TaskToOrder", fields: [sourceTaskId], references: [id])
+}
+
+enum OrderStatus {
+  REQUESTED
+  APPROVED
+  ORDERED
+  SHIPPED
+  RECEIVED
+  CANCELLED
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  meetingId String
+  memberId  String
+  status    AttendanceStatus @default(PRESENT)
+  note      String?
+  createdAt DateTime         @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  member  Member  @relation(fields: [memberId], references: [id])
+
+  @@unique([meetingId, memberId])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+  LATE
+}
