@@ -1,199 +1,119 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { type SearchHit } from "@/app/api/search/route";
+import { Label } from "@/components/ui/label";
+import { Network, ArrowLeft, ExternalLink, AlertCircle } from "lucide-react";
 
 type TraceNode = { type: string; id: string; label: string; date?: string; href: string };
 type TraceResult = { root: TraceNode; chain: TraceNode[] };
 
-const typeColors: Record<string, string> = {
-  task: "bg-blue-50 text-blue-700 border-blue-200",
-  order: "bg-orange-50 text-orange-700 border-orange-200",
-  spec: "bg-purple-50 text-purple-700 border-purple-200",
-  decision: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  meeting: "bg-green-50 text-green-700 border-green-200",
-  actionItem: "bg-gray-50 text-gray-700 border-gray-200",
-};
-
-const typeLabels: Record<string, string> = {
-  task: "Task",
-  order: "Order",
-  spec: "Spec",
-  decision: "Decision",
-  meeting: "Meeting",
-  actionItem: "Action Item",
-};
-
-const typeIcons: Record<string, string> = {
-  task: "✓",
-  order: "🛒",
-  spec: "📄",
-  decision: "⚖️",
-  meeting: "🗓",
+const TYPE_CONFIG: Record<string, { label: string; cls: string; dot: string }> = {
+  task:       { label: "Task",        cls: "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200",   dot: "bg-indigo-400" },
+  order:      { label: "Order",       cls: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",      dot: "bg-amber-400" },
+  spec:       { label: "Spec",        cls: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",   dot: "bg-violet-400" },
+  decision:   { label: "Decision",    cls: "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200",   dot: "bg-yellow-400" },
+  meeting:    { label: "Meeting",     cls: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",dot: "bg-emerald-400" },
+  actionItem: { label: "Action Item", cls: "bg-slate-50 text-slate-700 ring-1 ring-slate-200",      dot: "bg-slate-400" },
 };
 
 export default function TracePage() {
-  const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<SearchHit[]>([]);
-  const [open, setOpen] = useState(false);
+  const [entity, setEntity] = useState<"task" | "order" | "spec">("task");
+  const [id, setId] = useState("");
   const [result, setResult] = useState<TraceResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [selected, setSelected] = useState<SearchHit | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (query.length < 2) {
-      setHits([]);
-      setOpen(false);
-      return;
-    }
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-      if (res.ok) {
-        const data: SearchHit[] = await res.json();
-        setHits(data);
-        setOpen(data.length > 0);
-      }
-    }, 250);
-  }, [query]);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  async function runTrace(hit: SearchHit) {
-    setSelected(hit);
-    setQuery(hit.title);
-    setOpen(false);
+  async function trace() {
+    if (!id.trim()) return;
     setLoading(true);
     setError("");
     setResult(null);
-
-    // Only task/order/spec are supported by the trace engine
-    const traceableTypes = ["task", "order", "spec"];
-    if (!traceableTypes.includes(hit.type)) {
-      setError(`Traceability is not supported for type "${hit.type}". Select a task, order, or spec.`);
-      setLoading(false);
-      return;
-    }
-
-    const res = await fetch(`/api/trace?entity=${hit.type}&id=${hit.id}`);
+    const res = await fetch(`/api/trace?entity=${entity}&id=${id.trim()}`);
     if (res.ok) {
       setResult(await res.json());
     } else {
-      setError("Could not trace this entity. It may have no upstream links.");
+      setError("Entity not found. Check the ID and try again.");
     }
     setLoading(false);
   }
 
-  const grouped = hits.reduce<Record<string, SearchHit[]>>((acc, h) => {
-    (acc[h.type] ??= []).push(h);
-    return acc;
-  }, {});
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Traceability Engine</h1>
-        <p className="text-muted-foreground text-sm">Answer "Why was this decision made?" by walking the execution graph</p>
+        <h1 className="text-2xl font-bold tracking-tight">Traceability Engine</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">Answer "Why was this decision made?" by walking the execution graph</p>
       </div>
 
-      <div className="max-w-2xl" ref={containerRef}>
-        <div className="relative">
-          <Input
-            value={query}
-            onChange={(e) => { setQuery(e.target.value); setSelected(null); setResult(null); setError(""); }}
-            placeholder="Search tasks, orders, specs… (e.g. esp32)"
-            className="w-full"
-            autoComplete="off"
-          />
-
-          {open && (
-            <div className="absolute z-50 mt-1 w-full rounded-lg border bg-popover shadow-lg max-h-96 overflow-y-auto">
-              {Object.entries(grouped).map(([type, items]) => (
-                <div key={type}>
-                  <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide bg-muted/40 sticky top-0">
-                    {typeIcons[type]} {typeLabels[type] ?? type}
-                  </div>
-                  {items.map((hit) => (
-                    <button
-                      key={hit.id}
-                      className="w-full text-left px-3 py-2 hover:bg-accent flex items-start justify-between gap-3 group"
-                      onMouseDown={() => runTrace(hit)}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{hit.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">{hit.subtitle}</p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {hit.badge && (
-                          <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${typeColors[hit.type] ?? "bg-muted"}`}>
-                            {hit.badge}
-                          </span>
-                        )}
-                        {hit.url && (
-                          <a
-                            href={hit.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-orange-600 underline hover:text-orange-800"
-                            onMouseDown={(e) => e.stopPropagation()}
-                          >
-                            Buy →
-                          </a>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Search */}
+      <div className="rounded-xl border bg-card px-5 py-5 max-w-2xl space-y-4">
+        <div className="flex items-end gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Entity Type</Label>
+            <Select value={entity} onValueChange={(v) => setEntity(v as "task" | "order" | "spec")}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="task">Task</SelectItem>
+                <SelectItem value="order">Order</SelectItem>
+                <SelectItem value="spec">Spec</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1 space-y-1.5">
+            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Entity ID</Label>
+            <Input
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+              placeholder="Paste the entity ID…"
+              onKeyDown={(e) => e.key === "Enter" && trace()}
+            />
+          </div>
+          <Button onClick={trace} disabled={loading || !id.trim()}>
+            {loading ? "Tracing…" : "Trace"}
+          </Button>
         </div>
-
-        {!selected && query.length < 2 && (
-          <p className="text-xs text-muted-foreground mt-2">
-            Type at least 2 characters to search across all entity types. Click a result to trace its upstream chain.
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground">
+          Find IDs in the URL of any task, order, or spec detail page:{" "}
+          <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">/tasks/[id]</code>
+        </p>
       </div>
 
-      {loading && <p className="text-sm text-muted-foreground">Tracing…</p>}
-      {error && <p className="text-destructive text-sm">{error}</p>}
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive max-w-2xl">
+          <AlertCircle className="size-4 shrink-0" />
+          {error}
+        </div>
+      )}
 
       {result && (
-        <div className="space-y-4">
-          <h2 className="font-semibold">Trace Result</h2>
+        <div className="space-y-5 max-w-4xl">
+          <h2 className="font-semibold text-base">Trace Result</h2>
+
           <div className="flex items-center gap-2 flex-wrap">
             <TraceNodeChip node={result.root} />
-            {result.chain.map((node, i) => (
-              <span key={i} className="flex items-center gap-2">
-                <span className="text-muted-foreground text-lg">←</span>
+            {result.chain.map((node) => (
+              <span key={`${node.type}-${node.id}`} className="flex items-center gap-2">
+                <ArrowLeft className="size-4 text-muted-foreground" />
                 <TraceNodeChip node={node} />
               </span>
             ))}
           </div>
 
           {result.chain.length === 0 && (
-            <p className="text-muted-foreground text-sm">No upstream links found. This entity has no traceability connections yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No upstream links found. This entity has no traceability connections yet.
+            </p>
           )}
 
-          <div className="rounded-lg border p-4 bg-muted/30 max-w-2xl">
-            <p className="text-sm font-medium mb-2">Reading the chain</p>
+          <div className="rounded-xl border bg-muted/30 px-4 py-4 text-sm max-w-2xl">
+            <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground mb-1.5">Reading the chain</p>
             <p className="text-xs text-muted-foreground">
-              The chain reads right-to-left: the root entity (leftmost) was created because of each step to its right.
-              Navigate to any node to see full context.
+              The root entity (leftmost) was created because of each step to its right. Click any node to see full context.
             </p>
           </div>
         </div>
@@ -203,12 +123,21 @@ export default function TracePage() {
 }
 
 function TraceNodeChip({ node }: { node: TraceNode }) {
+  const config = TYPE_CONFIG[node.type] ?? { label: node.type, cls: "bg-muted text-foreground ring-1 ring-border", dot: "bg-muted-foreground" };
   return (
     <Link href={node.href}>
-      <div className={`rounded-lg border px-3 py-2 hover:opacity-80 transition-opacity cursor-pointer ${typeColors[node.type] ?? "bg-muted"}`}>
-        <p className="text-xs font-medium uppercase tracking-wide">{typeLabels[node.type] ?? node.type}</p>
-        <p className="text-sm font-semibold leading-tight max-w-48 truncate">{node.label}</p>
-        {node.date && <p className="text-xs opacity-70">{new Date(node.date).toLocaleDateString()}</p>}
+      <div className={`rounded-xl px-3.5 py-2.5 hover:opacity-80 transition-opacity cursor-pointer group ${config.cls}`}>
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span className={`size-1.5 rounded-full ${config.dot}`} />
+          <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{config.label}</p>
+          <ExternalLink className="size-3 opacity-0 group-hover:opacity-50 transition-opacity ml-auto" />
+        </div>
+        <p className="text-sm font-semibold leading-snug max-w-48 truncate">{node.label}</p>
+        {node.date && (
+          <p className="text-xs opacity-60 mt-0.5">
+            {new Date(node.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          </p>
+        )}
       </div>
     </Link>
   );
