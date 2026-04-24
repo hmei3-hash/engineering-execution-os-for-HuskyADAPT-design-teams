@@ -128,3 +128,57 @@
     @apply font-sans;
   }
 }
+
+/* ── Theme overrides (applied via data-theme on <html>) ── */
+
+[data-theme="emerald"] {
+  --primary: oklch(0.54 0.18 158);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.94 0.05 158);
+  --secondary-foreground: oklch(0.35 0.1 158);
+  --accent: oklch(0.93 0.06 158);
+  --accent-foreground: oklch(0.35 0.1 158);
+  --ring: oklch(0.54 0.18 158);
+  --sidebar: oklch(0.12 0.02 158);
+  --sidebar-primary: oklch(0.54 0.18 158);
+  --sidebar-accent: oklch(0.22 0.03 158);
+  --sidebar-ring: oklch(0.54 0.18 158);
+}
+
+[data-theme="rose"] {
+  --primary: oklch(0.60 0.22 10);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.95 0.04 10);
+  --secondary-foreground: oklch(0.38 0.1 10);
+  --accent: oklch(0.94 0.05 10);
+  --accent-foreground: oklch(0.38 0.1 10);
+  --ring: oklch(0.60 0.22 10);
+  --sidebar: oklch(0.12 0.02 10);
+  --sidebar-primary: oklch(0.60 0.22 10);
+  --sidebar-accent: oklch(0.22 0.04 10);
+  --sidebar-ring: oklch(0.60 0.22 10);
+}
+
+[data-theme="amber"] {
+  --primary: oklch(0.70 0.18 65);
+  --primary-foreground: oklch(0.13 0 0);
+  --secondary: oklch(0.95 0.05 65);
+  --secondary-foreground: oklch(0.38 0.1 65);
+  --accent: oklch(0.93 0.06 65);
+  --accent-foreground: oklch(0.38 0.1 65);
+  --ring: oklch(0.70 0.18 65);
+  --sidebar: oklch(0.13 0.02 65);
+  --sidebar-primary: oklch(0.70 0.18 65);
+  --sidebar-accent: oklch(0.23 0.04 65);
+  --sidebar-ring: oklch(0.70 0.18 65);
+}
+
+/* ── Global micro-interactions ── */
+
+button, [role="button"] {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
