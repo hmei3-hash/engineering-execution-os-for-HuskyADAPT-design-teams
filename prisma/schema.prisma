@@ -8,13 +8,14 @@ datasource db {
 }
 
 model Member {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  role      String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  role         String
+  passwordHash String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   attendance       Attendance[]
   tasksOwned       Task[]       @relation("TaskOwner")
