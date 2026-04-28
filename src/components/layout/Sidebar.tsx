@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
 import {
@@ -14,6 +15,7 @@ import {
   Users,
   Network,
   BookOpen,
+  LogOut,
 } from "lucide-react";
 
 const nav = [
@@ -29,6 +31,7 @@ const nav = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   return (
     <aside className="w-56 shrink-0 flex flex-col h-full border-r" style={{ background: "var(--sidebar)", borderColor: "var(--sidebar-border)" }}>
       {/* Brand */}
@@ -74,6 +77,20 @@ export function Sidebar() {
           <BookOpen className="size-3" />
           <span>⌃⇧H — Handbook Copilot</span>
         </div>
+        {session?.user && (
+          <div className="mt-2 px-3 pt-2 border-t" style={{ borderColor: "var(--sidebar-border)" }}>
+            <p className="text-xs font-medium truncate" style={{ color: "oklch(1 0 0 / 0.7)" }}>{session.user.name}</p>
+            <p className="text-xs truncate mb-2" style={{ color: "oklch(1 0 0 / 0.3)" }}>{session.user.email}</p>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="flex items-center gap-1.5 text-xs w-full rounded px-1 py-1 hover:bg-white/10 transition-colors"
+              style={{ color: "oklch(1 0 0 / 0.4)" }}
+            >
+              <LogOut className="size-3" />
+              Sign out
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );

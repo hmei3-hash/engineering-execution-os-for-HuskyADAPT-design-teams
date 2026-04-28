@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import fs from "fs/promises";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
+import { s3GetText } from "@/lib/s3";
 
 const SYSTEM = `You are the HuskyADAPT engineering handbook assistant.
 STRICT RULES — follow exactly:
@@ -34,12 +35,24 @@ function findChunks(content: string, query: string, filename: string) {
   }));
 }
 
+/** Load handbook: S3 first, fallback to local file. */
+async function loadHandbook(filename: string): Promise<string> {
+  // Try S3 if configured
+  if (process.env.AWS_S3_BUCKET && process.env.AWS_ACCESS_KEY_ID) {
+    const s3Key = `handbooks/${filename}`;
+    const content = await s3GetText(s3Key).catch(() => null);
+    if (content) return content;
+  }
+  // Fallback: local filesystem
+  return fs.readFile(path.join(process.cwd(), filename), "utf-8").catch(() => "");
+}
+
 export async function POST(req: NextRequest) {
   const { query, file = "hb" } = await req.json().catch(() => ({}));
   if (!query?.trim()) return Response.json({ error: "query required" }, { status: 400 });
 
   const filename = file === "test" ? "test.md" : "hb.md";
-  const content = await fs.readFile(path.join(process.cwd(), filename), "utf-8").catch(() => "");
+  const content = await loadHandbook(filename);
   if (!content) return Response.json({ answer: "Handbook file not found.", sources: [] });
 
   const chunks = findChunks(content, query, filename);
@@ -50,23 +63,25 @@ export async function POST(req: NextRequest) {
   const context = chunks.map((c) => `[${c.cite}]\n${c.text}`).join("\n\n---\n\n");
   const sources = chunks.map((c) => c.cite);
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.OPENAI_API_KEY) {
     return Response.json({
-      answer: `[No ANTHROPIC_API_KEY set — showing raw context]\n\n${chunks.map((c) => `**${c.cite}**\n${c.text}`).join("\n\n---\n\n")}`,
+      answer: `[No OPENAI_API_KEY set — showing raw context]\n\n${chunks.map((c) => `**${c.cite}**\n${c.text}`).join("\n\n---\n\n")}`,
       sources,
-      warning: "Set ANTHROPIC_API_KEY in .env.local to enable AI responses.",
+      warning: "Set OPENAI_API_KEY in .env.local to enable AI responses.",
     });
   }
 
   try {
-    const client = new Anthropic();
-    const msg = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
+    const client = new OpenAI();
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
       max_tokens: 1024,
-      system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: `<context>\n${context}\n</context>\n\nQuestion: ${query}` }],
+      messages: [
+        { role: "system", content: SYSTEM },
+        { role: "user", content: `<context>\n${context}\n</context>\n\nQuestion: ${query}` },
+      ],
     });
-    const answer = msg.content[0].type === "text" ? msg.content[0].text : "No response.";
+    const answer = response.choices[0].message.content ?? "No response.";
     return Response.json({ answer, sources });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
